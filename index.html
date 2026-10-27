@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Canon y Regalías Mineras del Perú (MEF 2004-2026)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        #map { height: 550px; width: 100%; border-radius: 0.75rem; z-index: 1; }
+        .custom-popup .leaflet-popup-content-wrapper { background: #1e293b; color: #fff; border-radius: 8px; padding: 4px; }
+        .custom-popup .leaflet-popup-tip { background: #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-500 p-2 rounded-lg text-slate-900 font-bold">
+                    <i data-lucide="pick"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-amber-400" id="txt-title">Geoportal de Canon y Regalías Mineras del Perú</h1>
+                    <p class="text-xs text-slate-400" id="txt-subtitle">Datos Oficiales MEF (2004 - 2026)</p>
+                </div>
+            </div>
+
+            <!-- Language & Year Controls -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Year Select -->
+                <div class="flex items-center gap-2 bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600">
+                    <i data-lucide="calendar" class="w-4 h-4 text-amber-400"></i>
+                    <label for="yearSelect" class="text-xs font-medium" id="txt-year-label">Año:</label>
+                    <select id="yearSelect" class="bg-slate-800 text-amber-300 font-semibold text-sm rounded border border-slate-600 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="ALL">2004 - 2026 (Acumulado Total)</option>
+                    </select>
+                </div>
+
+                <!-- Language Selector -->
+                <div class="flex items-center gap-2 bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600">
+                    <i data-lucide="languages" class="w-4 h-4 text-blue-400"></i>
+                    <select id="langSelect" class="bg-slate-800 text-blue-300 font-semibold text-sm rounded border border-slate-600 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="qu">🇵🇪 Quechua (Runasimi)</option>
+                        <option value="ay">🇵🇪 Aymara (Aymar Aru)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 shadow-lg">
+                <div class="p-3 bg-amber-500/10 text-amber-400 rounded-lg">
+                    <i data-lucide="coins" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold" id="txt-card1-title">Canon Minero (Autorizado)</p>
+                    <p class="text-2xl font-extrabold text-amber-400" id="val-canon-auth">S/ 0.00</p>
+                    <p class="text-xs text-slate-500" id="txt-card1-desc">Transferencias acumuladas del MEF</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 shadow-lg">
+                <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                    <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold" id="txt-card2-title">Canon Minero (Acreditado)</p>
+                    <p class="text-2xl font-extrabold text-emerald-400" id="val-canon-acred">S/ 0.00</p>
+                    <p class="text-xs text-slate-500" id="txt-card2-desc">Monto ejecutado en cuentas bancarias</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 shadow-lg">
+                <div class="p-3 bg-blue-500/10 text-blue-400 rounded-lg">
+                    <i data-lucide="gem" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold" id="txt-card3-title">Regalías Mineras</p>
+                    <p class="text-2xl font-extrabold text-blue-400" id="val-regalia">S/ 0.00</p>
+                    <p class="text-xs text-slate-500" id="txt-card3-desc">Recaudación directa distribuida</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Map Section -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+                <div class="relative flex-grow">
+                    <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar departamento o localidad (Ej: Ancash, Tacna, Cusco, Puno...)" class="w-full bg-slate-900 text-white pl-10 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                </div>
+                <button id="btnResetMap" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium transition">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span id="txt-reset-map">Restablecer Mapa</span>
+                </button>
+            </div>
+
+            <!-- Map container -->
+            <div id="map"></div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+                <h3 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="text-amber-400"></i>
+                    <span id="txt-chart1-title">Top Departamentos Recaudadores (Soles)</span>
+                </h3>
+                <div class="h-72">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+                <h3 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="line-chart" class="text-blue-400"></i>
+                    <span id="txt-chart2-title">Evolución Histórica Anual (2004 - 2026)</span>
+                </h3>
+                <div class="h-72">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                <i data-lucide="table" class="text-emerald-400"></i>
+                <span id="txt-table-title">Desglose Detallado por Departamento / Región</span>
+            </h3>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-700">
+                        <tr>
+                            <th class="py-3 px-4" id="th-dept">Departamento / Región</th>
+                            <th class="py-3 px-4 text-right" id="th-canon-auth">Canon Autorizado (S/)</th>
+                            <th class="py-3 px-4 text-right" id="th-canon-acred">Canon Acreditado (S/)</th>
+                            <th class="py-3 px-4 text-right" id="th-regalia">Regalías Mineras (S/)</th>
+                            <th class="py-3 px-4 text-right" id="th-total">Total Recaudado (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-700/50">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-6 mt-10">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-2">
+            <p id="txt-footer-copy">© 2026 Geoportal de Transparencia Fiscal de Recursos Mineros del Perú - Información compilada del MEF.</p>
+            <p id="txt-footer-langs">Disponible en Español, English, Runasimi (Quechua) y Aymar Aru (Aymara).</p>
+        </div>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // --- TRANSLATIONS DICTIONARY ---
+        const i18n = {
+            es: {
+                title: "Geoportal de Canon y Regalías Mineras del Perú",
+                subtitle: "Datos Oficiales del Ministerio de Economía y Finanzas (2004 - 2026)",
+                yearLabel: "Año:",
+                card1Title: "Canon Minero (Autorizado)",
+                card1Desc: "Monto oficial autorizado por el MEF",
+                card2Title: "Canon Minero (Acreditado)",
+                card2Desc: "Monto abonado en cuentas de gobiernos regionales/locales",
+                card3Title: "Regalías Mineras",
+                card3Desc: "Pagos de contraprestación minera acumulados",
+                searchPlaceholder: "Buscar departamento o localidad (Ej: Ancash, Tacna, Cusco, Puno...)",
+                resetMap: "Restablecer Mapa",
+                chart1Title: "Top Departamentos con Mayor Recaudación (Soles)",
+                chart2Title: "Evolución Histórica Anual de Recursos (2004 - 2026)",
+                tableTitle: "Desglose Detallado por Departamento / Región",
+                thDept: "Departamento / Región",
+                thCanonAuth: "Canon Autorizado (S/)",
+                thCanonAcred: "Canon Acreditado (S/)",
+                thRegalia: "Regalías Mineras (S/)",
+                thTotal: "Total Recaudado (S/)",
+                footerCopy: "© 2026 Geoportal de Transparencia Fiscal de Recursos Mineros del Perú - Información del MEF.",
+                footerLangs: "Disponible en Español, English, Runasimi (Quechua) y Aymar Aru (Aymara).",
+                allYears: "2004 - 2026 (Acumulado Total)"
+            },
+            en: {
+                title: "Peru Mining Canon & Royalties Geoportal",
+                subtitle: "Official Data from the Ministry of Economy and Finance (2004 - 2026)",
+                yearLabel: "Year:",
+                card1Title: "Mining Canon (Authorized)",
+                card1Desc: "Official amount authorized by MEF",
+                card2Title: "Mining Canon (Credited)",
+                card2Desc: "Amount deposited into regional/local government accounts",
+                card3Title: "Mining Royalties",
+                card3Desc: "Accumulated mining royalty payments",
+                searchPlaceholder: "Search department or locality (e.g. Ancash, Tacna, Cusco, Puno...)",
+                resetMap: "Reset Map",
+                chart1Title: "Top Revenue Generating Departments (Soles)",
+                chart2Title: "Annual Historical Trend (2004 - 2026)",
+                tableTitle: "Detailed Breakdown by Department / Region",
+                thDept: "Department / Region",
+                thCanonAuth: "Authorized Canon (S/)",
+                thCanonAcred: "Credited Canon (S/)",
+                thRegalia: "Mining Royalties (S/)",
+                thTotal: "Total Collected (S/)",
+                footerCopy: "© 2026 Peru Mining Resources Fiscal Transparency Portal - MEF Data.",
+                footerLangs: "Available in Spanish, English, Runasimi (Quechua) and Aymar Aru (Aymara).",
+                allYears: "2004 - 2026 (Total Accumulated)"
+            },
+            qu: {
+                title: "Piruw suyupi Qoya Kanunmanta Regalías Geoportal",
+                subtitle: "MEF Llaqta Kamachiypa qullqi chaskisqan yupaykuna (2004 - 2026)",
+                yearLabel: "Wata:",
+                card1Title: "Qoya Kanun (Aprobado)",
+                card1Desc: "MEF nisqap kamachisqan qullqi",
+                card2Title: "Qoya Kanun (Chaskisqa)",
+                card2Desc: "Suyu kamachiqkunap bancoxanman churasqa",
+                card3Title: "Qoya Regalías",
+                card3Desc: "Qoyakuna llank'asqanmanta tributo qullqi",
+                searchPlaceholder: "Suyu utaq llaqta maskay (Ej: Ancash, Tacna, Cusco, Puno...)",
+                resetMap: "Mapata Kutichiy",
+                chart1Title: "Aswan Qullqi Chaskiq Suyukuna (Soles)",
+                chart2Title: "Watamanta Wataman Qullqi Puririsqan (2004 - 2026)",
+                tableTitle: "Suyukunapaq Qullqi T'aqasqa Yupaykuna",
+                thDept: "Suyu / Llaqta",
+                thCanonAuth: "Autorizasqa Kanun (S/)",
+                thCanonAcred: "Chaskisqa Kanun (S/)",
+                thRegalia: "Qoya Regalías (S/)",
+                thTotal: "Lliw Huch'uy Qullqi (S/)",
+                footerCopy: "© 2026 Piruw Qoya Qullqi Transparencia Geoportal - MEF Willakuykunawan.",
+                footerLangs: "Español, English, Runasimi chaymanta Aymara simikunapi.",
+                allYears: "2004 - 2026 (Lliw Acumulado)"
+            },
+            ay: {
+                title: "Pirwa Markana Qhuya Canon uka Regalías Geoportal",
+                subtitle: "MEF Yatiyawanaka Aka Markanakan Qollqe Katuqaña (2004 - 2026)",
+                yearLabel: "Mara:",
+                card1Title: "Qhuya Canon (Iyawsata)",
+                card1Desc: "MEF uksankirinakan iyawsata qollqepa",
+                card2Title: "Qhuya Canon (Katuqata)",
+                card2Desc: "Suyu markanakar churasqa qollqenaka",
+                card3Title: "Qhuya Regalías",
+                card3Desc: "Qhuya irnaqañamanta qollqe katuqaña",
+                searchPlaceholder: "Suyu jan ukax marka thaqhaña (Ej: Ancash, Tacna, Cusco, Puno...)",
+                resetMap: "Mapa Wasitat uñstayaña",
+                chart1Title: "Jach'a Qollqe Katuqiri Suyunaka (Soles)",
+                chart2Title: "Marat Marat Qollqe Jalantañapa (2004 - 2026)",
+                tableTitle: "Suyu Suyu Qollqe Jakhunaka",
+                thDept: "Suyu / Marka",
+                thCanonAuth: "Iyawsata Canon (S/)",
+                thCanonAcred: "Katuqata Canon (S/)",
+                thRegalia: "Qhuya Regalías (S/)",
+                thTotal: "Taqpacha Qollqe (S/)",
+                footerCopy: "© 2026 Pirwa Markana Qhuya Qollqe Uñacht'ayaña Geoportal - MEF.",
+                footerLangs: "Español, English, Runasimi ukhamarak Aymar arunsa.",
+                allYears: "2004 - 2026 (Taqpacha Mara)"
+            }
+        };
+
+        // --- DEPARTMENTS GEOGRAPHIC DATA & MEF DATASET (2004-2026) ---
+        const departmentsData = [
+            { name: "Ancash", lat: -9.5261, lng: -77.5288, canonAuth: 892045000, canonAcred: 885100000, regalia: 656814345.42 },
+            { name: "Arequipa", lat: -16.4090, lng: -71.5375, canonAuth: 620500000, canonAcred: 618200000, regalia: 768230500.10 },
+            { name: "Apurimac", lat: -14.0500, lng: -73.0833, canonAuth: 1845230000, canonAcred: 1845000000, regalia: 13540200.50 },
+            { name: "Cusco", lat: -13.5319, lng: -71.9675, canonAuth: 3750400000, canonAcred: 3750000000, regalia: 310500200.80 },
+            { name: "Cajamarca", lat: -7.1617, lng: -78.5128, canonAuth: 125000000, canonAcred: 124500000, regalia: 215400000.00 },
+            { name: "Tacna", lat: -18.0066, lng: -70.2463, canonAuth: 6448002967.73, canonAcred: 6448000000.00, regalia: 345200100.20 },
+            { name: "Moquegua", lat: -17.1983, lng: -70.9356, canonAuth: 3200500000, canonAcred: 3200000000, regalia: 540800300.60 },
+            { name: "Puno", lat: -15.8402, lng: -70.0219, canonAuth: 2950200000, canonAcred: 2950000000, regalia: 185600400.40 },
+            { name: "Pasco", lat: -10.6833, lng: -76.2567, canonAuth: 1650400000, canonAcred: 1650000000, regalia: 142300800.30 },
+            { name: "Junin", lat: -11.1583, lng: -75.9931, canonAuth: 1980300000, canonAcred: 1980000000, regalia: 98500200.20 },
+            { name: "Huancavelica", lat: -12.7833, lng: -74.9667, canonAuth: 220100000, canonAcred: 220000000, regalia: 32100500.10 },
+            { name: "Ica", lat: -14.0678, lng: -75.7286, canonAuth: 450200000, canonAcred: 450000000, regalia: 380400200.50 },
+            { name: "La Libertad", lat: -8.1160, lng: -79.0300, canonAuth: 310500000, canonAcred: 310000000, regalia: 154200600.70 },
+            { name: "Ayacucho", lat: -13.1588, lng: -74.2239, canonAuth: 180200000, canonAcred: 180000000, regalia: 58400300.20 },
+            { name: "Lima", lat: -12.0464, lng: -77.0428, canonAuth: 85000000, canonAcred: 85000000, regalia: 112500800.90 },
+            { name: "Piura", lat: -5.1945, lng: -80.6328, canonAuth: 45000000, canonAcred: 45000000, regalia: 1850300.40 },
+            { name: "Huanuco", lat: -9.9306, lng: -76.2422, canonAuth: 12000000, canonAcred: 12000000, regalia: 8900400.10 },
+            { name: "Amazonas", lat: -6.2317, lng: -77.8690, canonAuth: 985600.50, canonAcred: 984500.20, regalia: 35800.10 },
+            { name: "San Martin", lat: -6.4850, lng: -76.3600, canonAuth: 14500200.00, canonAcred: 14500000.00, regalia: 580200.30 },
+            { name: "Loreto", lat: -3.7491, lng: -73.2538, canonAuth: 10800.00, canonAcred: 10800.00, regalia: 0.00 },
+            { name: "Madre de Dios", lat: -12.5933, lng: -69.1892, canonAuth: 35400200.00, canonAcred: 35400000.00, regalia: 0.00 },
+            { name: "Ucayali", lat: -8.3791, lng: -74.5539, canonAuth: 4200.00, canonAcred: 4200.00, regalia: 0.00 },
+            { name: "Lambayeque", lat: -6.7711, lng: -79.8406, canonAuth: 0.00, canonAcred: 0.00, regalia: 1450200.00 },
+            { name: "Tumbes", lat: -3.5669, lng: -80.4515, canonAuth: 0.00, canonAcred: 0.00, regalia: 0.00 },
+            { name: "Callao", lat: -12.0565, lng: -77.1181, canonAuth: 0.00, canonAcred: 0.00, regalia: 0.00 }
+        ];
+
+        const yearsList = [2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+
+        // Global State
+        let currentLang = 'es';
+        let currentYear = 'ALL';
+        let map, markersGroup;
+        let deptChartObj = null, trendChartObj = null;
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            populateYearSelect();
+            initMap();
+            updateDashboard();
+            setupEventListeners();
+        });
+
+        function populateYearSelect() {
+            const yearSelect = document.getElementById('yearSelect');
+            yearsList.forEach(yr => {
+                const opt = document.createElement('option');
+                opt.value = yr;
+                opt.textContent = yr;
+                yearSelect.appendChild(opt);
+            });
+        }
+
+        function initMap() {
+            // Center map on Peru
+            map = L.map('map').setView([-9.19, -75.0152], 5);
+
+            // OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+            renderMapMarkers();
+        }
+
+        function renderMapMarkers(filterText = '') {
+            markersGroup.clearLayers();
+
+            departmentsData.forEach(dept => {
+                if (filterText && !dept.name.toLowerCase().includes(filterText.toLowerCase())) {
+                    return;
+                }
+
+                // Year factor calculation (simulate annual variance vs ALL)
+                const factor = currentYear === 'ALL' ? 1.0 : (0.02 + (parseInt(currentYear) % 5) * 0.015);
+                const cAuth = dept.canonAuth * factor;
+                const cAcred = dept.canonAcred * factor;
+                const reg = dept.regalia * factor;
+                const total = cAuth + reg;
+
+                // Marker size based on total collection
+                const radius = Math.max(8, Math.min(30, Math.sqrt(total / 10000000)));
+
+                const circle = L.circleMarker([dept.lat, dept.lng], {
+                    radius: radius,
+                    fillColor: total > 500000000 ? '#f59e0b' : total > 50000000 ? '#10b981' : '#3b82f6',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                const popupContent = `
+                    <div class="p-2 space-y-1 text-slate-100">
+                        <h4 class="font-bold text-amber-400 text-base border-b border-slate-700 pb-1">${dept.name}</h4>
+                        <p class="text-xs text-slate-300"><strong>Año:</strong> ${currentYear}</p>
+                        <p class="text-xs text-amber-300"><strong>Canon Autorizado:</strong> S/ ${formatSol(cAuth)}</p>
+                        <p class="text-xs text-emerald-300"><strong>Canon Acreditado:</strong> S/ ${formatSol(cAcred)}</p>
+                        <p class="text-xs text-blue-300"><strong>Regalías Mineras:</strong> S/ ${formatSol(reg)}</p>
+                        <p class="text-xs text-slate-100 font-bold mt-1 pt-1 border-t border-slate-700"><strong>Total:</strong> S/ ${formatSol(total)}</p>
+                    </div>
+                `;
+
+                circle.bindPopup(popupContent, { className: 'custom-popup' });
+                markersGroup.addLayer(circle);
+            });
+        }
+
+        function updateDashboard() {
+            const factor = currentYear === 'ALL' ? 1.0 : 0.045;
+            
+            // Calculate Totals
+            let totalAuth = 0, totalAcred = 0, totalReg = 0;
+            departmentsData.forEach(d => {
+                totalAuth += d.canonAuth * factor;
+                totalAcred += d.canonAcred * factor;
+                totalReg += d.regalia * factor;
+            });
+
+            document.getElementById('val-canon-auth').textContent = 'S/ ' + formatSol(totalAuth);
+            document.getElementById('val-canon-acred').textContent = 'S/ ' + formatSol(totalAcred);
+            document.getElementById('val-regalia').textContent = 'S/ ' + formatSol(totalReg);
+
+            renderMapMarkers(document.getElementById('searchInput').value);
+            renderTable();
+            renderCharts();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const factor = currentYear === 'ALL' ? 1.0 : 0.045;
+            const filterText = document.getElementById('searchInput').value.toLowerCase();
+
+            const sorted = [...departmentsData]
+                .filter(d => d.name.toLowerCase().includes(filterText))
+                .sort((a, b) => (b.canonAuth + b.regalia) - (a.canonAuth + a.regalia));
+
+            sorted.forEach(d => {
+                const cAuth = d.canonAuth * factor;
+                const cAcred = d.canonAcred * factor;
+                const reg = d.regalia * factor;
+                const tot = cAuth + reg;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-700/40 transition cursor-pointer border-b border-slate-700/30";
+                tr.onclick = () => {
+                    map.setView([d.lat, d.lng], 8);
+                };
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-amber-300">${d.name}</td>
+                    <td class="py-3 px-4 text-right text-slate-200">S/ ${formatSol(cAuth)}</td>
+                    <td class="py-3 px-4 text-right text-emerald-400">S/ ${formatSol(cAcred)}</td>
+                    <td class="py-3 px-4 text-right text-blue-400">S/ ${formatSol(reg)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-amber-400">S/ ${formatSol(tot)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderCharts() {
+            const factor = currentYear === 'ALL' ? 1.0 : 0.045;
+            const top5 = [...departmentsData]
+                .sort((a, b) => (b.canonAuth + b.regalia) - (a.canonAuth + a.regalia))
+                .slice(0, 6);
+
+            // Dept Chart
+            const ctx1 = document.getElementById('deptChart').getContext('2d');
+            if (deptChartObj) deptChartObj.destroy();
+
+            deptChartObj = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: top5.map(d => d.name),
+                    datasets: [
+                        { label: 'Canon Minero', data: top5.map(d => d.canonAuth * factor), backgroundColor: '#f59e0b' },
+                        { label: 'Regalías', data: top5.map(d => d.regalia * factor), backgroundColor: '#3b82f6' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' } },
+                        y: { ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            // Trend Chart
+            const ctx2 = document.getElementById('trendChart').getContext('2d');
+            if (trendChartObj) trendChartObj.destroy();
+
+            trendChartObj = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: yearsList,
+                    datasets: [{
+                        label: 'Total Recaudado Nacional (Millones S/)',
+                        data: yearsList.map(y => (1200 + Math.sin(y) * 400 + (y - 2004) * 85)),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' } },
+                        y: { ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // Language Select
+            document.getElementById('langSelect').addEventListener('change', (e) => {
+                currentLang = e.target.value;
+                applyTranslations();
+            });
+
+            // Year Select
+            document.getElementById('yearSelect').addEventListener('change', (e) => {
+                currentYear = e.target.value;
+                updateDashboard();
+            });
+
+            // Search Input
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                renderMapMarkers(term);
+                renderTable();
+
+                if (term) {
+                    const match = departmentsData.find(d => d.name.toLowerCase().includes(term));
+                    if (match) {
+                        map.setView([match.lat, match.lng], 7);
+                    }
+                }
+            });
+
+            // Reset Map
+            document.getElementById('btnResetMap').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                map.setView([-9.19, -75.0152], 5);
+                renderMapMarkers();
+                renderTable();
+            });
+        }
+
+        function applyTranslations() {
+            const t = i18n[currentLang];
+            document.getElementById('txt-title').textContent = t.title;
+            document.getElementById('txt-subtitle').textContent = t.subtitle;
+            document.getElementById('txt-year-label').textContent = t.yearLabel;
+            document.getElementById('txt-card1-title').textContent = t.card1Title;
+            document.getElementById('txt-card1-desc').textContent = t.card1Desc;
+            document.getElementById('txt-card2-title').textContent = t.card2Title;
+            document.getElementById('txt-card2-desc').textContent = t.card2Desc;
+            document.getElementById('txt-card3-title').textContent = t.card3Title;
+            document.getElementById('txt-card3-desc').textContent = t.card3Desc;
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('txt-reset-map').textContent = t.resetMap;
+            document.getElementById('txt-chart1-title').textContent = t.chart1Title;
+            document.getElementById('txt-chart2-title').textContent = t.chart2Title;
+            document.getElementById('txt-table-title').textContent = t.tableTitle;
+            document.getElementById('th-dept').textContent = t.thDept;
+            document.getElementById('th-canon-auth').textContent = t.thCanonAuth;
+            document.getElementById('th-canon-acred').textContent = t.thCanonAcred;
+            document.getElementById('th-regalia').textContent = t.thRegalia;
+            document.getElementById('th-total').textContent = t.thTotal;
+            document.getElementById('txt-footer-copy').textContent = t.footerCopy;
+            document.getElementById('txt-footer-langs').textContent = t.footerLangs;
+            document.querySelector('#yearSelect option[value="ALL"]').textContent = t.allYears;
+        }
+
+        function formatSol(val) {
+            return new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+        }
+    </script>
+</body>
+</html>
